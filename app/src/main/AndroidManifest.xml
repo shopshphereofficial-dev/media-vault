@@ -14,14 +14,15 @@
     <application
         android:name=".MediaVaultApp"
         android:allowBackup="false"
-        android:icon="@android:drawable/ic_menu_save"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@android:drawable/ic_menu_save"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MediaVault"
         android:usesCleartextTraffic="true"
         tools:targetApi="34">
 
+        <!-- Main MediaVault Application Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -34,18 +35,28 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Receive Shared URLs -->
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
-            </intent-filter>
-            
             <!-- Receive Shared ZIP archives for official export imports -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/zip" />
+            </intent-filter>
+        </activity>
+
+        <!-- Snaptube-style Floating Translucent Quick Downloader for YT, Insta, FB, etc. -->
+        <activity
+            android:name=".ui.quickshare.QuickDownloadDialogActivity"
+            android:exported="true"
+            android:label="Download with MediaVault"
+            android:theme="@style/Theme.MediaVault.TranslucentDialog"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:windowSoftInputMode="stateHidden">
+
+            <intent-filter android:label="Download with MediaVault">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
 
