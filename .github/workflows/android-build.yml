@@ -36,12 +36,11 @@ jobs:
         name: MediaVault-debug.apk
         path: app/build/outputs/apk/debug/app-debug.apk
 
-    - name: Create Release
+    - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/heads/main')
       with:
-        tag_name: v1.0.0
-        name: MediaVault v1.0.0 Release
+        tag_name: v1.0.1-b${{ github.run_number }}
+        name: MediaVault v1.0.1 (Build #${{ github.run_number }})
         draft: false
         prerelease: false
         files: app/build/outputs/apk/debug/app-debug.apk
