@@ -1,8 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.MediaVault" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">#0F1117</item>
-        <item name="android:navigationBarColor">#0F1117</item>
-        <item name="android:windowBackground">#0F1117</item>
+    <!-- Base application theme using Material3 (inherits from AppCompat to fix startup crash) -->
+    <style name="Theme.MediaVault" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:statusBarColor">#0A0D14</item>
+        <item name="android:navigationBarColor">#0A0D14</item>
+        <item name="android:windowBackground">#0A0D14</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <!-- Translucent floating Snaptube-like bottom sheet dialog theme -->
+    <style name="Theme.MediaVault.TranslucentDialog" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">0.55</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Translucent</item>
     </style>
 </resources>
