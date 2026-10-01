@@ -1,0 +1,10 @@
+<resources>
+    <color name="primary">#00E5FF</color>
+    <color name="on_primary">#000000</color>
+    <color name="primary_container">#004D5A</color>
+    <color name="on_primary_container">#8CF5FF</color>
+    <color name="background_dark">#0F1117</color>
+    <color name="surface_dark">#181B24</color>
+    <color name="surface_variant_dark">#222736</color>
+    <color name="card_dark">#1D212E</color>
+</resources>
