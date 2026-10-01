@@ -1,10 +1,12 @@
 package com.mediavault.app.download
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
@@ -31,7 +33,12 @@ class DownloadForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        startForeground(notificationId, buildNotification("Ready", 0, 0))
+        val initialNotif = buildNotification("MediaVault Downloader Active", 0, 0)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(notificationId, initialNotif, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        } else {
+            startForeground(notificationId, initialNotif)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -80,9 +87,7 @@ class DownloadForegroundService : Service() {
                 body?.byteStream()?.use { input ->
                     fos.use { output ->
                         while (input.read(buffer).also { bytesRead = it } != -1) {
-                            if (!isActive) {
-                                break
-                            }
+                            if (!isActive) break
                             output.write(buffer, 0, bytesRead)
                             downloadedSoFar += bytesRead
                             bytesSinceUpdate += bytesRead
@@ -94,10 +99,10 @@ class DownloadForegroundService : Service() {
                                 val eta = if (speed > 0) remaining / speed else 0L
 
                                 db.downloadDao().updateProgress(taskId, downloadedSoFar, totalLength, speed, eta)
-                                updateNotification(task.fileName, downloadedSoFar, totalLength)
+                                updateNotification(task.title, downloadedSoFar, totalLength)
 
-                                lastUpdate = now
                                 bytesSinceUpdate = 0L
+                                lastUpdate = now
                             }
                         }
                     }
@@ -105,29 +110,36 @@ class DownloadForegroundService : Service() {
 
                 if (isActive) {
                     db.downloadDao().updateStatus(taskId, DownloadStatus.COMPLETED)
-                    val mimeType = when (task.mediaType) {
-                        MediaType.VIDEO -> "video/mp4"
-                        MediaType.AUDIO -> "audio/mpeg"
-                        MediaType.IMAGE -> "image/jpeg"
-                        MediaType.DOCUMENT -> "application/octet-stream"
+
+                    val isVideo = safeName.endsWith(".mp4", true) || safeName.endsWith(".mkv", true)
+                    val isAudio = safeName.endsWith(".mp3", true) || safeName.endsWith(".m4a", true)
+                    val isImage = safeName.endsWith(".jpg", true) || safeName.endsWith(".png", true)
+                    val mediaType = when {
+                        isVideo -> MediaType.VIDEO
+                        isAudio -> MediaType.AUDIO
+                        isImage -> MediaType.IMAGE
+                        else -> MediaType.DOCUMENT
                     }
-                    db.mediaDao().insertMedia(
-                        MediaItem(
-                            title = safeName,
-                            filePath = outputFile.absolutePath,
-                            mediaType = task.mediaType,
-                            mimeType = mimeType,
-                            sizeBytes = outputFile.length(),
-                            sourceUrl = task.url
-                        )
+
+                    val mediaItem = MediaItem(
+                        title = task.title,
+                        filePath = outputFile.absolutePath,
+                        fileSizeBytes = outputFile.length(),
+                        mimeType = if (isVideo) "video/mp4" else if (isAudio) "audio/mpeg" else "application/octet-stream",
+                        mediaType = mediaType,
+                        sourceUrl = task.url
                     )
+                    db.mediaDao().insertMedia(mediaItem)
+                    notifyFinished(task.title, true)
                 }
+
             } catch (e: Exception) {
                 db.downloadDao().updateStatus(taskId, DownloadStatus.FAILED)
+                notifyFinished(task.title, false)
             } finally {
                 activeJobs.remove(taskId)
                 if (activeJobs.isEmpty()) {
-                    stopForeground(STOP_FOREGROUND_DETACH)
+                    stopForeground(STOP_FOREGROUND_REMOVE)
                     stopSelf()
                 }
             }
@@ -139,7 +151,8 @@ class DownloadForegroundService : Service() {
         activeJobs[taskId]?.cancel()
         activeJobs.remove(taskId)
         serviceScope.launch {
-            AppDatabase.getInstance(applicationContext).downloadDao().updateStatus(taskId, DownloadStatus.PAUSED)
+            val db = AppDatabase.getInstance(applicationContext)
+            db.downloadDao().updateStatus(taskId, DownloadStatus.PAUSED)
         }
     }
 
@@ -148,12 +161,7 @@ class DownloadForegroundService : Service() {
         activeJobs.remove(taskId)
         serviceScope.launch {
             val db = AppDatabase.getInstance(applicationContext)
-            val task = db.downloadDao().getDownloadById(taskId)
-            if (task != null) {
-                db.downloadDao().deleteDownload(task)
-                val downloadDir = getExternalFilesDir(null) ?: filesDir
-                File(downloadDir, task.fileName).delete()
-            }
+            db.downloadDao().updateStatus(taskId, DownloadStatus.FAILED)
         }
     }
 
@@ -164,25 +172,37 @@ class DownloadForegroundService : Service() {
                 "Media Downloads",
                 NotificationManager.IMPORTANCE_LOW
             )
-            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
         }
     }
 
-    private fun buildNotification(title: String, current: Long, total: Long): android.app.Notification {
-        val progress = if (total > 0) ((current * 100) / total).toInt() else 0
+    private fun buildNotification(title: String, downloaded: Long, total: Long): Notification {
+        val progress = if (total > 0) ((downloaded * 100) / total).toInt() else 0
         return NotificationCompat.Builder(this, notificationChannelId)
             .setContentTitle("MediaVault Downloader")
-            .setContentText("$title ($progress%)")
+            .setContentText(title)
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setProgress(100, progress, total <= 0)
             .setOngoing(true)
+            .setSilent(true)
             .build()
     }
 
-    private fun updateNotification(title: String, current: Long, total: Long) {
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(notificationId, buildNotification(title, current, total))
+    private fun updateNotification(title: String, downloaded: Long, total: Long) {
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.notify(notificationId, buildNotification(title, downloaded, total))
+    }
+
+    private fun notifyFinished(title: String, success: Boolean) {
+        val manager = getSystemService(NotificationManager::class.java)
+        val notif = NotificationCompat.Builder(this, notificationChannelId)
+            .setContentTitle(if (success) "Download Complete" else "Download Failed")
+            .setContentText(title)
+            .setSmallIcon(if (success) android.R.drawable.stat_sys_download_done else android.R.drawable.stat_notify_error)
+            .setAutoCancel(true)
+            .build()
+        manager.notify(System.currentTimeMillis().toInt(), notif)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
