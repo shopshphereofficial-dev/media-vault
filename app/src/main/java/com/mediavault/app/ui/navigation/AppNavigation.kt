@@ -1,5 +1,7 @@
 package com.mediavault.app.ui.navigation
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -75,7 +77,31 @@ fun AppNavigation(
         NavHost(
             navController = navController,
             startDestination = Screen.Browser.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = {
+                fadeIn(animationSpec = tween(280)) + slideIntoContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = tween(280)
+                )
+            },
+            exitTransition = {
+                fadeOut(animationSpec = tween(280)) + slideOutOfContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = tween(280)
+                )
+            },
+            popEnterTransition = {
+                fadeIn(animationSpec = tween(280)) + slideIntoContainer(
+                    AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = tween(280)
+                )
+            },
+            popExitTransition = {
+                fadeOut(animationSpec = tween(280)) + slideOutOfContainer(
+                    AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = tween(280)
+                )
+            }
         ) {
             composable(Screen.Browser.route) {
                 BrowserScreen(initialUrl = initialUrl)
@@ -113,9 +139,10 @@ fun AppNavigation(
                 )
             ) { backStackEntry ->
                 val encodedPath = backStackEntry.arguments?.getString("filePath") ?: ""
-                val encodedTitle = backStackEntry.arguments?.getString("title") ?: ""
+                val encodedTitle = backStackEntry.arguments?.getString("title") ?: "Media"
                 val filePath = URLDecoder.decode(encodedPath, "UTF-8")
                 val title = URLDecoder.decode(encodedTitle, "UTF-8")
+
                 PlayerScreen(
                     filePath = filePath,
                     title = title,
