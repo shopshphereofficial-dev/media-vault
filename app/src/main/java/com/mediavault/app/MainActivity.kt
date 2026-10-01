@@ -3,12 +3,13 @@ package com.mediavault.app
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.*
 import androidx.compose.runtime.*
-import androidx.fragment.app.FragmentActivity
 import com.mediavault.app.ui.navigation.AppNavigation
 import com.mediavault.app.ui.theme.MediaVaultTheme
 
-class MainActivity : FragmentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private var sharedUrlState = mutableStateOf<String?>(null)
 
@@ -42,7 +43,9 @@ class MainActivity : FragmentActivity() {
         if (intent.action == Intent.ACTION_SEND) {
             val text = intent.getStringExtra(Intent.EXTRA_TEXT)
             if (!text.isNullOrBlank()) {
-                sharedUrlState.value = text
+                val regex = Regex("""https?://[^\s]+""")
+                val found = regex.find(text)?.value ?: text
+                sharedUrlState.value = found
             }
         }
     }
