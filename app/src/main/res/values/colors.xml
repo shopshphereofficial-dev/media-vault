@@ -1,10 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#00E5FF</color>
-    <color name="on_primary">#000000</color>
-    <color name="primary_container">#004D5A</color>
-    <color name="on_primary_container">#8CF5FF</color>
-    <color name="background_dark">#0F1117</color>
-    <color name="surface_dark">#181B24</color>
-    <color name="surface_variant_dark">#222736</color>
-    <color name="card_dark">#1D212E</color>
+    <color name="primary">#3B82F6</color>
+    <color name="primary_dark">#2563EB</color>
+    <color name="secondary">#8B5CF6</color>
+    <color name="accent_green">#10B981</color>
+    <color name="background_dark">#0A0D14</color>
+    <color name="surface_dark">#121722</color>
+    <color name="text_white">#F8FAFC</color>
+    <color name="text_muted">#94A3B8</color>
 </resources>
